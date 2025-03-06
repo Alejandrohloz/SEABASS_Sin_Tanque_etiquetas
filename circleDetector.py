@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-class CircleDetector:
+class circleDetector:
     def __init__(self, min_radius=30, max_radius=400):
         self.min_radius = min_radius
         self.max_radius = max_radius

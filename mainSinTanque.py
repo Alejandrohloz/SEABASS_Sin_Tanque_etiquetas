@@ -226,12 +226,6 @@ if tank_coords:
     
 # Add recorded fish positions
 heatmap_generator.add_positions(fish_relative_positions)
-
-# Agregar el círculo de radio al generador de mapas de calor
-if tank_coords and tank_radius:
-    cx_tank, cy_tank = tank_coords
-    # Por ejemplo, agregar un círculo (de radio) al mapa de calor
-    #heatmap_generator.add_circle_to_heatmap(cx_tank, cy_tank, tank_radius)
     
 
 # Generar el mapa de calor aqui debe dibujar tambienel circulo con el radio y los centros para las coordenadas relativas del pez y eso

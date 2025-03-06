@@ -20,37 +20,38 @@ class heatMapGenerator:
         self.width = width
         self.height = height
         self.output_path = output_path
+        self.fish_relative_positions = []  # Store all detected fish relative positions
+        self.tank_mid_positions = []  # Store detected tank mid positions
+        self.tank_radius_store = []  # Store detected tank radius
         self.grid_size = grid_size  # Tamaño de cada celda en la cuadrícula
+        
+        #Create an empty matrix for the Heatmap based on the grid size
         self.heatmap = np.zeros((height // grid_size, width // grid_size), dtype=np.float32)
+        
+    
+    def set_tank_mid_positions(self, tank_mid_positions):
+        """
+        Set tank mid positions from detected tanks (list of tuples: (x, y)).
+        """
+        self.tank_mid_positions = tank_mid_positions
+        
+        
+        
+    def set_tank_radius_store(self, tank_radius_store):
+        """
+        Set tank radii from detected tanks.
+        """
+        self.tank_radius_store = tank_radius_store
+        
+            
 
     def add_positions(self, positions):
         """
-        Agrega posiciones absolutas de los peces al heatmap.
+        Add fish relative positions to be plotted in the heatmap.
         """
-        for x, y in positions:
-            grid_x = int(x // self.grid_size)
-            grid_y = int(y // self.grid_size)
-
-            if 0 <= grid_x < self.heatmap.shape[1] and 0 <= grid_y < self.heatmap.shape[0]:
-                self.heatmap[grid_y, grid_x] += 1  # Incrementa la intensidad en la celda correspondiente
+        self.fish_relative_positions.extend(positions)
                 
                 
-                
-                
-    def add_circle_to_heatmap(self, cx, cy, radius):
-        """
-        Dibuja un círculo que representa la ubicación del tanque en el heatmap.
-        El círculo se dibuja en las celdas correspondientes dentro de la cuadrícula.
-        """
-        grid_cx = int(cx // self.grid_size)
-        grid_cy = int(cy // self.grid_size)
-        grid_radius = int(radius // self.grid_size)
-
-        for i in range(max(0, grid_cx - grid_radius), min(self.heatmap.shape[1], grid_cx + grid_radius + 1)):
-            for j in range(max(0, grid_cy - grid_radius), min(self.heatmap.shape[0], grid_cy + grid_radius + 1)):
-                # Si la celda está dentro del círculo, incrementamos la intensidad
-                if (i - grid_cx)**2 + (j - grid_cy)**2 <= grid_radius**2:
-                    self.heatmap[j, i] += 1
                     
                     
 
@@ -58,6 +59,24 @@ class heatMapGenerator:
         """
         Genera y guarda el heatmap basado en las posiciones registradas.
         """
+        
+        
+        if not self.fish_relative_positions:
+            print("Error: No fish positions recorded.")
+            return
+        
+        
+        # Increment heatmap intensity based on fish positions
+        for (fish_rel_x, fish_rel_y) in self.fish_relative_positions:
+            abs_x = int(fish_rel_x // self.grid_size)
+            abs_y = int((self.height - fish_rel_y) // self.grid_size)  # Inverted Y-axis
+
+            # Check if coordinates are within the valid heatmap range
+            if 0 <= abs_x < self.heatmap.shape[1] and 0 <= abs_y < self.heatmap.shape[0]:
+                self.heatmap[abs_y, abs_x] += 1  # Increment heatmap intensity at the fish position
+                
+                
+
         if self.heatmap.max() > 0:
             self.heatmap = (self.heatmap / self.heatmap.max()) * 255  # Normalizar entre 0 y 255
 
@@ -76,6 +95,20 @@ class heatMapGenerator:
 
         ax.set_xlim(0, self.width // self.grid_size - 1)
         ax.set_ylim(0, self.height // self.grid_size - 1)
+        
+        
+        # Draw the tank as a circle if available
+        if self.tank_mid_positions and self.tank_radius_store:
+            for (tank_x, tank_y), radius in zip(self.tank_mid_positions, self.tank_radius_store):
+                radius_cells = radius // self.grid_size  # Convert radius to grid cells
+                tank_center_x_grid = tank_x // self.grid_size
+                tank_center_y_grid = (self.height - tank_y) // self.grid_size  # Inverted Y-axis
+                
+                # Adjust to prevent oval shape
+                circle = plt.Circle((tank_center_x_grid, tank_center_y_grid), radius_cells, color="yellow", fill=False, linewidth=2)
+                ax.add_patch(circle)
+                ax.plot(tank_center_x_grid, tank_center_y_grid, "y+")  # Draw a yellow cross in the middle of the tank
+                ax.plot(tank_center_x_grid, tank_center_y_grid, "yo")  # Draw a yellow dot in the middle of the tank
 
         plt.title("Heatmap - Movimiento de Peces")
         plt.xlabel("X (píxeles)")
