@@ -21,6 +21,7 @@ class heatMapGenerator:
         self.height = height
         self.output_path = output_path
         self.fish_relative_positions = []  # Store all detected fish relative positions
+        self.fish_absolute_positions = []  # Store all fish absolute positions
         self.tank_mid_positions = []  # Store detected tank mid positions
         self.tank_radius_store = []  # Store detected tank radius
         self.grid_size = grid_size  # Tamaño de cada celda en la cuadrícula
@@ -33,15 +34,18 @@ class heatMapGenerator:
         """
         Set tank mid positions from detected tanks (list of tuples: (x, y)).
         """
-        self.tank_mid_positions = tank_mid_positions
+        if not self.tank_mid_positions:
+            self.tank_mid_positions = tank_mid_positions[0]  # Store only the first tank position
+        
         
         
         
     def set_tank_radius_store(self, tank_radius_store):
         """
-        Set tank radii from detected tanks.
+        Set tank radius from detected tanks.
         """
-        self.tank_radius_store = tank_radius_store
+        if not self.tank_radius_store:
+            self.tank_radius_store = tank_radius_store[0]  # Store only the first tank radius
         
             
 
@@ -49,12 +53,15 @@ class heatMapGenerator:
         """
         Add fish relative positions to be plotted in the heatmap.
         """
-        self.fish_relative_positions.extend(positions)
+        for fish_rel_x, fish_rel_y in positions:
+            if self.tank_mid_positions:
+                absolute_x = fish_rel_x + self.tank_mid_positions[0]  # Convert to absolute X
+                absolute_y = fish_rel_y + self.tank_mid_positions[1]  # Convert to absolute Y
+                self.fish_absolute_positions.append((absolute_x, absolute_y))
                 
                 
                     
                     
-
     def generate_heatmap(self):
         """
         Genera y guarda el heatmap basado en las posiciones registradas.
@@ -66,10 +73,10 @@ class heatMapGenerator:
             return
         
         
-        # Increment heatmap intensity based on fish positions
-        for (fish_rel_x, fish_rel_y) in self.fish_relative_positions:
-            abs_x = int(fish_rel_x // self.grid_size)
-            abs_y = int((self.height - fish_rel_y) // self.grid_size)  # Inverted Y-axis
+        # Increment heatmap intensity based on absolute fish positions
+        for (fish_abs_x, fish_abs_y) in self.fish_absolute_positions:
+            abs_x = int(fish_abs_x // self.grid_size)
+            abs_y = int((self.height - fish_abs_y) // self.grid_size)  # Inverted Y-axis
 
             # Check if coordinates are within the valid heatmap range
             if 0 <= abs_x < self.heatmap.shape[1] and 0 <= abs_y < self.heatmap.shape[0]:
@@ -99,16 +106,17 @@ class heatMapGenerator:
         
         # Draw the tank as a circle if available
         if self.tank_mid_positions and self.tank_radius_store:
-            for (tank_x, tank_y), radius in zip(self.tank_mid_positions, self.tank_radius_store):
-                radius_cells = radius // self.grid_size  # Convert radius to grid cells
-                tank_center_x_grid = tank_x // self.grid_size
-                tank_center_y_grid = (self.height - tank_y) // self.grid_size  # Inverted Y-axis
-                
-                # Adjust to prevent oval shape
-                circle = plt.Circle((tank_center_x_grid, tank_center_y_grid), radius_cells, color="yellow", fill=False, linewidth=2)
-                ax.add_patch(circle)
-                ax.plot(tank_center_x_grid, tank_center_y_grid, "y+")  # Draw a yellow cross in the middle of the tank
-                ax.plot(tank_center_x_grid, tank_center_y_grid, "yo")  # Draw a yellow dot in the middle of the tank
+            tank_x, tank_y = self.tank_mid_positions
+            radius = self.tank_radius_store
+            radius_cells = radius // self.grid_size  # Convert radius to grid cells
+            tank_center_x_grid = tank_x // self.grid_size
+            tank_center_y_grid = (self.height - tank_y) // self.grid_size  # Inverted Y-axis
+            
+            # Adjust to prevent oval shape
+            circle = plt.Circle((tank_center_x_grid, tank_center_y_grid), radius_cells, color="yellow", fill=False, linewidth=2)
+            ax.add_patch(circle)
+            ax.plot(tank_center_x_grid, tank_center_y_grid, "y+")  # Draw a yellow cross in the middle of the tank
+            ax.plot(tank_center_x_grid, tank_center_y_grid, "yo")  # Draw a yellow dot in the middle of the tank
 
         plt.title("Heatmap - Movimiento de Peces")
         plt.xlabel("X (píxeles)")

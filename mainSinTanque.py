@@ -27,7 +27,7 @@ screen_width, screen_height = pyautogui.size()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model_path = 'last.pt'  # Ruta al modelo entrenado
-model_path = r"W:\HectorGarciaPalencia\lubinas_app\best_model\last.pt"
+#model_path = r"W:\HectorGarciaPalencia\lubinas_app\best_model\last.pt"
 model = YOLO(model_path).to(device)
 
 video_path = 'videos/Video_Prueba_2.mp4'  # Ruta del video
